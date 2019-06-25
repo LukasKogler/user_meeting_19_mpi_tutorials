@@ -51,4 +51,4 @@ a.Assemble()
 solvers.CG(mat=a.mat, pre=c.mat, sol=gfu.vec, rhs=f.vec, maxsteps=100,
            tol=1e-6, printrates=comm.rank==0) # !
 
-gfu.Save("solution.sol", parallel=True)
+gfu.Save("ex1.sol", parallel=True)
