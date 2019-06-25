@@ -1,5 +1,5 @@
 
-# EX 3: plot a function
+# EX 3: ParallelDofs
 
 from ngsolve import *
 

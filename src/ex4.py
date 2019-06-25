@@ -1,5 +1,5 @@
 
-# EX 3: plot a function
+# EX 4: sub-communicators
 
 from ngsolve import *
 
