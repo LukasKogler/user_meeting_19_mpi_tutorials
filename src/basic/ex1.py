@@ -11,7 +11,6 @@ print("Hello from rank", comm.rank, "of", comm.size)
 
 if comm.rank == 0:
     # the master-proc generates mesh
-    # from netgen.csg import unit_cube
     from netgen.geom2d import unit_square
     mesh = unit_square.GenerateMesh(maxh=0.1)
     ngsmesh = Mesh(mesh)

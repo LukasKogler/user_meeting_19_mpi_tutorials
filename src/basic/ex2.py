@@ -1,5 +1,5 @@
 
-# EX 2: Load/Save Solutions
+# EX 2: Visualize Mesh Distribution
 
 from ngsolve import *
 
