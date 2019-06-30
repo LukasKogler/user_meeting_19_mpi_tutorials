@@ -7,6 +7,7 @@ ngsglobals.msg_level = 1
 
 # get handle to the MPI communicator
 comm = mpi_world
+
 print("Hello from rank", comm.rank, "of", comm.size)
 
 if comm.rank == 0:
@@ -28,6 +29,7 @@ print("rank", comm.rank, ", local NV =", mesh.nv, ", and NE =", mesh.ne)
 
 # build H1-FESpace as usual
 V = H1(mesh, order=3, dirichlet=".*")
+
 print("rank", comm.rank, "has", V.ndof, "of", V.ndofglobal, "dofs!")
 
 u,v = V.TnT()
