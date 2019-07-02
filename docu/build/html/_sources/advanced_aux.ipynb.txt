@@ -1,0 +1,98 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+       "# Advanced Examples - Auxiliary Maxwell Solver\n",
+       "In the \"advanced\" folder, you can find a series of python files that will guide you through the last part of the workshop.",
+       "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+      "source": [
+	  "We will again consider a problem we already heard about on Monday:\n",
+	  "\n",
+	  "Find $u \\in H(\\text{curl})$ such that\n",
+    "\n",
+    "$$\n",
+    "\\int_\\Omega \\mu^{-1} \\text{curl curl } u \\cdot \\text{curl } v ~dx~= \\int_\\Omega J v ~dx~\\qquad  \\forall \\, v \\in H(\\text{curl })\n",
+    "$$\n",
+    "\n",
+    "As we have already seen on Monday, in order to make the problem well posed,\n",
+    "we need to add an $L^2$ term.\n",
+    "\n",
+    "*This means we have a very large near-nullspace* $\\nabla(H^1)$. This is the main obstacle in finding solvers for this equation.\n",
+    "\n",
+    "$$\n",
+    "\\int_\\Omega \\mu^{-1} \\text{curl } u \\cdot \\text{curl } v + \\epsilon \\mu^{-1} ~ u \\cdot v ~dx ~ = \\int_\\Omega J\\cdot v dx \\qquad  \\forall \\, v \\in H(\\text{curl })\n",
+    "$$\n",
+    "\n",
+    "So far, we have used the BDDC preconditioner for this problem, which worked fine enough. \n",
+    "However, it leaves the coarse grid problem to be solved exacly, wich is not a scalable approach.\n",
+    "\n",
+    "\n",
+    "The auxiliary space preconditioner is based on the existence of regular decompositions of $H(\\text{curl })$ functions\n",
+    "into an $[H^1]^3$ and the gradient of an $H^1$ function:\n",
+    "$$\n",
+    "u = \\nabla\\varphi + w \\qquad \\varphi\\in H^1, w\\in [H^1]^3\n",
+    "$$\n",
+    "\n",
+    "We also have a decomposition on the discrete level, but we additionally make a small, high-frequency\n",
+    "error $r_h$:\n",
+    "\n",
+    "$$\n",
+    "u_h = \\nabla\\varphi_h + w_h + r_h\n",
+    "$$\n",
+    "\n",
+    "The components for the preconditioner are:\n",
+    "\n",
+    " - $C_j$: To adress $r_h$, we choose Jacobi-preconditioner for the $H(\\text{curl })$ matrix.\n",
+    " - $\\nabla$: The discrete gradient matrix, $H^1 \\rightarrow H(\\text{curl })$\n",
+    " - $C_s$: A preconditioner for $\\epsilon\\mu^{-1} \\Delta$ in $H^1$\n",
+    " - $E$: The embedding $[H^1]^3 \\rightarrow H(\\text{curl })$\n",
+    " - $C_s$: A preconditioner for $\\mu^{-1}\\Delta$ in $[H^1]^3$\n",
+    "\n",
+    "\n",
+    "### Putting these components together:\n",
+    "$$\n",
+    "C = \\nabla C_s \\nabla^T + E C_v E^T + C_j\n",
+    "$$\n",
+    "\n",
+    "\n",
+    "There are plenty of fast, robust and scalable solvers for the Laplacian. With this method we can extend their applicability also to $H(\\text{curl })$ problems\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}

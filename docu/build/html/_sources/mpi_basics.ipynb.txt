@@ -1,0 +1,614 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Basics of MPI-parallel NGSolve\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## MPI usage\n",
+    "MPI processes are linked via so-called communicators. From Python, we have access to a handle to this opaque communicator object.\n",
+    "\n",
+    "It provides some basic functionality, for example it can tell us the number of\n",
+    "processes it contains, and what out specific identifier within that set is."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:0] Hello from rank  0  of  4\n",
+      "[stdout:1] Hello from rank  1  of  4\n",
+      "[stdout:2] Hello from rank  2  of  4\n",
+      "[stdout:3] Hello from rank  3  of  4\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px\n",
+    "from ngsolve import *\n",
+    "print(\"Hello from rank \", mpi_world.rank, ' of ', mpi_world.size)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    " \n",
+    "Additionally, \"mpi_world\" provides:\n",
+    " \n",
+    " - time measurement \n",
+    " \n",
+    "- barriers \n",
+    " \n",
+    "- computing sums, minima, maxima"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:0] There are  4  of us, which took us  0.002464 seconds to figure out\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px\n",
+    "comm = mpi_world\n",
+    "t = comm.WTime()\n",
+    "s2 = comm.Sum(1)\n",
+    "t = comm.Max(comm.WTime()-t)\n",
+    "if comm.rank==0:\n",
+    "    print('There are ', s2, ' of us, which took us ', round(t,6), 'seconds to figure out')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+       "Parallel NGSolve objects do communication on C++ side in the background, so in most cases, this is all the MPI functionality we need to access directly.\n",
+       "\n",
+       "For situations where it is necessary to explicitely do communication on python side, there is the mpi4py package.\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Distributed Meshes\n",
+    "When we load a mesh from a file in parallel, it gets distributed among the ranks and each one gets only a part of it, \n",
+    "**rank 0 gets nothing**.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:0] rank 0's part of the mesh has  0 elements,  0 faces,  0 edges and  0  vertices\n",
+      "[stdout:1] rank 1's part of the mesh has  77 elements,  77 faces,  128 edges and  52  vertices\n",
+      "[stdout:2] rank 2's part of the mesh has  74 elements,  74 faces,  125 edges and  52  vertices\n",
+      "[stdout:3] rank 3's part of the mesh has  79 elements,  79 faces,  131 edges and  53  vertices\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px\n",
+    "mesh = Mesh('square.vol', comm)\n",
+    "print('rank', str(comm.rank)+\"'s part of the mesh has \", mesh.ne, 'elements, ', \\\n",
+    "      mesh.nface, 'faces, ', mesh.nedge, 'edges and ', mesh.nv, ' vertices')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "![squareapart.png](squareapart.png)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "However, the entire geometry information is present everywhere:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:0] \n",
+      "rank 0 Materials: ('default',)\n",
+      "rank 0 Boundaries:  ('bottom', 'right', 'top', 'left')\n",
+      "[stdout:1] \n",
+      "rank 1 Materials: ('default',)\n",
+      "rank 1 Boundaries:  ('bottom', 'right', 'top', 'left')\n",
+      "[stdout:2] \n",
+      "rank 2 Materials: ('default',)\n",
+      "rank 2 Boundaries:  ('bottom', 'right', 'top', 'left')\n",
+      "[stdout:3] \n",
+      "rank 3 Materials: ('default',)\n",
+      "rank 3 Boundaries:  ('bottom', 'right', 'top', 'left')\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px --targets 0:5\n",
+    "print('rank', comm.rank, 'Materials:', mesh.GetMaterials())\n",
+    "print('rank', comm.rank, 'Boundaries: ', mesh.GetBoundaries())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Distributed Finite Element Spaces\n",
+    "When we define a Finite Element Space on a distributed mesh, each rank constructs a\n",
+    "Finite Element Space on it's part of the mesh."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:0] fes on rank 0 has 0 DOFs, globally we have  1096\n",
+      "[stdout:1] fes on rank 1 has 385 DOFs, globally we have  1096\n",
+      "[stdout:2] fes on rank 2 has 376 DOFs, globally we have  1096\n",
+      "[stdout:3] fes on rank 3 has 394 DOFs, globally we have  1096\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px\n",
+    "fes = H1(mesh, order=3, dirichlet='bottom|left')\n",
+    "print('fes on rank', comm.rank, 'has', fes.ndof, 'DOFs, globally we have ', fes.ndofglobal)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+       "Taking the sum of the local number of degrees of freedofs gives us a peculiar result:\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:0] Strangely, the sum of all local DOFs is  1155 != 1096\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px\n",
+    "nd2 = comm.Sum(fes.ndof)\n",
+    "if comm.rank==0:\n",
+    "    print('Strangely, the sum of all local DOFs is ', nd2, '!=', fes.ndofglobal)"
+   ]
+  },
+     {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Just summing up the dimensions of the local spaces does not take into account the coupling of DOFs between the subdomains:  \n",
+    "![bfapart.png](bf_apart.png)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Information about how the local DOFs stick together on a global level are stored in \n",
+    "the \"ParallelDofs\" object:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:0] rank 0 has 0 local DOFs, globally we have 1096\n",
+      "[stdout:1] rank 1 has 385 local DOFs, globally we have 1096\n",
+      "[stdout:2] rank 2 has 376 local DOFs, globally we have 1096\n",
+      "[stdout:3] rank 3 has 394 local DOFs, globally we have 1096\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px\n",
+    "pd = fes.ParallelDofs()\n",
+    "print('rank', comm.rank, 'has', pd.ndoflocal, 'local DOFs, globally we have', pd.ndofglobal)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "We can find out which DOFs are shared with which ranks."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "I am rank  3\n",
+      "---\n",
+      "I share DOF 0 with ranks: []\n",
+      "I share DOF 1 with ranks: []\n",
+      "I share DOF 2 with ranks: []\n",
+      "I share DOF 3 with ranks: []\n",
+      "I share DOF 4 with ranks: []\n",
+      "I share DOF 5 with ranks: [1]\n",
+      "I share DOF 6 with ranks: [2]\n",
+      "I share DOF 7 with ranks: []\n",
+      "I share DOF 8 with ranks: []\n",
+      "I share DOF 9 with ranks: []\n",
+      "... and so forth ...\n",
+      "\n",
+      "\n",
+      "DOFs I share with rank 1 :  [5, 15, 22, 30, 37, 39, 40, 47, 50, 83, 84, 135, 136, 173, 174, 213, 214, 251, 252, 259, 260, 267, 268, 297, 298]\n",
+      "DOFs I share with rank 2 :  [6, 16, 23, 28, 29, 30, 33, 36, 87, 88, 139, 140, 179, 180, 199, 200, 201, 202, 207, 208, 229, 230]\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px --target=3\n",
+    "print('I am rank ', comm.rank)\n",
+    "print('---')\n",
+    "\n",
+    "for k in range(min(10,fes.ndof)):\n",
+    "    print('I share DOF', k, 'with ranks:', [p for p in pd.Dof2Proc(k)])\n",
+    "    \n",
+    "print('... and so forth ...')\n",
+    "print('\\n')\n",
+    "\n",
+    "for p in range(0, comm.size-1):\n",
+    "    if len(pd.Proc2Dof(p)):\n",
+    "        print('DOFs I share with rank', p, ': ', [p for p in pd.Proc2Dof(p)])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "There are a couple of points to consider here:\n",
+       "\n",
+       " - Locally, DOFs are numbered 0..ndoflocal-1.\n",
+       "\n",
+    " - There is no global enumeration!\n",
+       "\n",
+    " - The local numbering of DOFs is conistent across subdomain boundaries.\n",
+       "\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Distributed Weak Formulations & Linear Algebra\n",
+    "\n",
+    "Linear- or Bilinearforms can be split into subdomain contributions.\n",
+    "\n",
+    "For example, the usual bilinear form $a(\\cdot, \\cdot)$ associated to Poisson's equation can be split into\n",
+    "$a_i(\\cdot, \\cdot)$ defined by:\n",
+    "$$\n",
+    "a(u,v) = \\sum_i a_i(u, v) = \\sum_i \\int_{\\Omega_i} \\nabla u \\nabla v~dx = \\sum_i a(u_{|\\Omega_i}, v_{|\\Omega_i})\n",
+    "$$\n",
+    "\n",
+    "When we write down BLFs and LFs for distributed FESpace, we actually simply write down\n",
+    "it's local contributions. \n",
+    "\n",
+    "The FESpace figures out how to stick them together to form global forms. \n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%px\n",
+    "u,v = fes.TnT()\n",
+    "a = BilinearForm(fes)\n",
+    "a += grad(u) * grad(v) * dx\n",
+    "a.Assemble()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Let us see what we get after assembling the bilinear form:"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "a.mat is a <class 'ngsolve.la.ParallelMatrix'>\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px --target=1\n",
+    "print('a.mat is a', type(a.mat))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Parallel Matrices and Vectors\n",
+    "\n",
+    "The general principle for distributed linear algebra objects is:\n",
+    "\n",
+    "**Parallel Object = Local Object + ParallelDofs**\n",
+    "\n",
+    "### Matrices"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[stdout:1] \n",
+      "a.mat.local_mat on rank 1 is a <class 'ngsolve.la.SparseMatrixd'> of dimensions 385 385\n",
+      "lcoal fes ndof:  385\n",
+      "a.mat.row_pardofs:  <ngsolve.la.ParallelDofs object at 0x7f3cbbfbd298>\n",
+      "a.mat.col_pardofs:  <ngsolve.la.ParallelDofs object at 0x7f3cbbfbd298>\n",
+      "fes pardofs:        <ngsolve.la.ParallelDofs object at 0x7f3cbbfbd298>\n",
+      "[stdout:2] \n",
+      "a.mat.local_mat on rank 2 is a <class 'ngsolve.la.SparseMatrixd'> of dimensions 376 376\n",
+      "lcoal fes ndof:  376\n",
+      "a.mat.row_pardofs:  <ngsolve.la.ParallelDofs object at 0x7fd254130110>\n",
+      "a.mat.col_pardofs:  <ngsolve.la.ParallelDofs object at 0x7fd254130110>\n",
+      "fes pardofs:        <ngsolve.la.ParallelDofs object at 0x7fd254130110>\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px --target=1,2\n",
+    "print('a.mat.local_mat on rank', comm.rank, 'is a', type(a.mat.local_mat), 'of dimensions', a.mat.local_mat.height, a.mat.local_mat.width)\n",
+    "print('lcoal fes ndof: ', fes.ndof)\n",
+    "print('a.mat.row_pardofs: ', a.mat.row_pardofs)\n",
+    "print('a.mat.col_pardofs: ', a.mat.col_pardofs)\n",
+    "print('fes pardofs:       ', fes.ParallelDofs())"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Each rank assembles it's local contribution to the global bilinear form into a sparse matrix, with dimensions matching that of the *local* FESpace!\n",
+    "\n",
+    "Let us assume we have some global numbering, and assume that $I_k$ is the set of indices corresponding to DOFs\n",
+    "on rank $k$. \n",
+    "\n",
+    "The ebmedding matrices $E_k\\in\\mathbb{R}^{n_i\\times n}$ take local vectors of dimension $n_k$ and gives us global vectors of dimension $n$ .\n",
+    "\n",
+    "The global matrix $A$, operating on vectors of dimension $n$, can be assembled from the local matrices in the same way\n",
+    "we usually assemble our FEM matrices from element matrices:\n",
+    "\n",
+    "$$\n",
+    "A = \\sum_i E_i A^{(i)} E_i^T\n",
+    "$$\n",
+    "\n",
+    "Importantly, the local matrices are **not** simply diagonal blocks of the global matrix,  $A^i$ only has partial values for DOFs that are shared with another rank, $A^{(i)} \\neq E_i^T A E_i$.\n",
+    "\n",
+       "![matdistr.png](matdistr.png)\n",
+    "\n",
+    "### Vectors\n",
+    "\n",
+    "Things look very similar for parallel vectors, they are again implemented as short, local vectors that\n",
+    "make up the global one:\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%px \n",
+    "f = LinearForm(fes)\n",
+    "f += SymbolicLFI(x*y*v)\n",
+    "f.Assemble()\n",
+    "gfu = GridFunction(fes)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "length of vector:     385\n",
+      "length of local vec:  385\n",
+      "dim local fes:        385\n",
+      "dim global fes:       1096\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px --target 1\n",
+    "print('length of vector:    ', len(gfu.vec))\n",
+    "print('length of local vec: ', len(gfu.vec.local_vec))\n",
+    "print('dim local fes:       ', fes.ndof)\n",
+    "print('dim global fes:      ', fes.ndofglobal)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Parallel Vectors additionally have a \"ParallelStatus\", which can be:\n",
+    "\n",
+    "- **Cumulated**, when the local vectors $v^i$ are just restrictions of the global vector $v$:\n",
+    "$$\n",
+    "v^{(i)} = E_i^T v\n",
+    "$$\n",
+    "\n",
+    "- **Distributed**, when, similarly to parallel matrices, the global vector is the sum of local contributions\n",
+    "$$\n",
+    "v = \\sum_i E_iv^{(i)}\n",
+    "$$\n",
+    "\n",
+    "\n",
+    "The vector of the linear form $f$ is a collection of locally assembled vectors, so it is distributed.\n",
+    "\n",
+    "The vector of the GridFunction gfu has been initialized with zeros, so it has consistent values, it is cumulated."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "status f vec:          PARALLEL_STATUS.DISTRIBUTED\n",
+      "status vec.local_vec:  PARALLEL_STATUS.NOT_PARALLEL\n",
+      "\n",
+      "status gfu vec:        PARALLEL_STATUS.CUMULATED\n",
+      "status vec.local_vec:  PARALLEL_STATUS.NOT_PARALLEL\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px --target 1\n",
+    "print('status f vec:         ', f.vec.GetParallelStatus())\n",
+    "print('status vec.local_vec: ', f.vec.local_vec.GetParallelStatus())\n",
+    "print('')\n",
+    "print('status gfu vec:       ', gfu.vec.GetParallelStatus())\n",
+    "print('status vec.local_vec: ', gfu.vec.local_vec.GetParallelStatus())"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "*Multiplication of a sub-assembled parallel matrix with a cumulated vector gives a distributed one:*\n",
+    "\n",
+    "$$\n",
+    "w = A v = (\\sum_i E_i A^{(i)} E_i^T) v = \\sum_i E_i A^{(i)} E_i^Tv = \\sum_i E_i A^{(i)}v^{(i)} = \\sum_i E_i w^{(i)}\n",
+    "$$\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "%%px\n",
+    "v = gfu.vec.CreateVector()\n",
+    "w = gfu.vec.CreateVector()\n",
+    "v[:] = 1.0\n",
+    "w.data = a.mat * v"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "status v:  PARALLEL_STATUS.CUMULATED\n",
+      "status w:  PARALLEL_STATUS.DISTRIBUTED\n"
+     ]
+    }
+   ],
+   "source": [
+    "%%px --target 1\n",
+    "print('status v: ', v.GetParallelStatus())\n",
+    "print('status w: ', w.GetParallelStatus())"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.7"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
