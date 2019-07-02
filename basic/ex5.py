@@ -1,7 +1,12 @@
 
+# EX 4: time-DG with MPI and periodic boundary
+
 from ngsolve import *
 
 comm = mpi_world
+
+# We can create and then distribute a periodic mesh as usual !
+# (This duplicates surface elements on the periodic boundary)
 
 if comm.rank==0:
     from netgen.geom2d import unit_square
