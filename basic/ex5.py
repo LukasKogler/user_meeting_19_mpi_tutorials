@@ -26,17 +26,14 @@ V = L2(mesh, order=4)
 
 u,v = V.TnT()
 
-# b = CoefficientFunction( (y-0.5,0.5-x) )
-b = CoefficientFunction( (0.3 + y-0.5,0.5-x) )
+# b = CoefficientFunction( (0.2 + 0.5 * (y-0.5), 0.5 * (0.5-x)) )
+b = CoefficientFunction( (0.3 + (y-0.5), (0.5-x)) )
 bn = b*specialcf.normal(2)
 
 a = BilinearForm(V)
 a += SymbolicBFI (-u * b*grad(v))
 a += SymbolicBFI ( bn*IfPos(bn, u, u.Other()) * (v-v.Other()), VOL, skeleton=True)
 a += SymbolicBFI ( bn*IfPos(bn, u, 0) * v, BND, skeleton=True)
-# a += u * b*grad(v) * dx
-# a += bn*IfPos(bn, u, u.Other()) * (v-v.Other()) * dx(skeleton=True)
-# a += bn*IfPos(bn, u, 0) * dx(skeleton=True)
 
 u = GridFunction(V)
 u.Set(exp (-40 * ( (x-0.7)*(x-0.7) + (y-0.7)*(y-0.7) )))
@@ -45,19 +42,19 @@ w = u.vec.CreateVector()
 
 t = 0
 tau = 5e-4
-tend = 10
+tend = 2
 count = 0
 out_interval = 0.02 // tau
 
-import os
-output_path = os.path.dirname(os.path.realpath(__file__)) + "/solutions"
-if comm.rank == 0 and not os.path.exists(output_path):
-    os.mkdir(output_path)
-comm.Barrier()
 
 Draw(u, name="sol")
 
-with TaskManager():
+if comm.size > 1:
+    import os
+    output_path = os.path.dirname(os.path.realpath(__file__)) + "/solutions"
+    if comm.rank == 0 and not os.path.exists(output_path):
+        os.mkdir(output_path)
+    comm.Barrier()
     while t < tend:
         if comm.rank == 0:
             print("\rt =", t, ", # of files =", int(count/out_interval), end=' ')
@@ -68,6 +65,17 @@ with TaskManager():
         if count % out_interval == 0:
             u.Save(output_path + '/u_' + str(int(count/out_interval)) + '.sol', parallel=True)
         count = count+1;
-comm.Barrier()
-if comm.rank == 0:
+    comm.Barrier()
+    if comm.rank == 0:
+        print('')
+else:
+    import time
+    while t < tend:
+        if count % out_interval == 0:
+            print("\rload fileno =", int(count/out_interval), end=' ')
+            u.Load('solutions/u_' + str(int(count/out_interval)) + '.sol', parallel=True)
+        t += tau
+        count = count+1;
+        Redraw(blocking=True)
+        time.sleep(0.0005)
     print('')

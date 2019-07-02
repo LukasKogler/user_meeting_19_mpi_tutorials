@@ -19,17 +19,23 @@ mesh = Mesh(mesh)
 
 V = H1(mesh, order=1, dirichlet=".*")
 
-pardofs = V.ParallelDofs()
-if comm.rank==1:
+if comm.size == 1:
+    gfu = GridFunction(V)
+    gfu.Load('ex3.sol', parallel=True)
+    Draw(gfu, mesh, 'sol')
+else:
+    pardofs = V.ParallelDofs()
+    if comm.rank==1:
+        for k in range(V.ndof):
+            print("rank", comm.rank, "shares DOF", k, "with", list(pardofs.Dof2Proc(k)))
+
+    # We visualize how many procs share each dof by
+    # setting the nodal coordinates correctly
+    gfu = GridFunction(V)
     for k in range(V.ndof):
-        print("rank", comm.rank, "shares DOF", k, "with", list(pardofs.Dof2Proc(k)))
+        gfu.vec[k] = len(pardofs.Dof2Proc(k))
+    gfu.Save("ex3.sol", parallel=True)
 
-gfu = GridFunction(V)
-for k in range(V.ndof):
-    gfu.vec[k] = len(pardofs.Dof2Proc(k))
-gfu.Save("ex3.sol", parallel=True)
-
-# gfu.vec.SetParallelStatus(PARALLEL_STATUS.DISTRIBUTED)
-# gfu.vec[:] = 1
-# gfu.vec.Cumulate()
-# gfu.Save("ex3.sol", parallel=True)
+    ## Exercise: can you find a way to do this witout a python loop?
+    ## HINT: parallel vectors can be Distributed or Cumulated (.Cumulate() / .Distribute())
+    ##       converts from one status to the other

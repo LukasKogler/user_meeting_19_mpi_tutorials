@@ -30,6 +30,8 @@ print("rank", comm.rank, ", local NV =", mesh.nv, ", and NE =", mesh.ne)
 # build H1-FESpace as usual
 V = H1(mesh, order=3, dirichlet=".*")
 
+gfu = GridFunction(V)
+
 print("rank", comm.rank, "has", V.ndof, "of", V.ndofglobal, "dofs!")
 
 u,v = V.TnT()
@@ -43,14 +45,15 @@ f.Assemble()
 a = BilinearForm (V)
 a += grad(u) * grad(v) * dx
 
-gfu = GridFunction(V)
-
 ## CG + Jacobi Preconditioner
 c = Preconditioner(a, type="local")
 a.Assemble()
 
 
-solvers.CG(mat=a.mat, pre=c.mat, sol=gfu.vec, rhs=f.vec, maxsteps=100,
-           tol=1e-6, printrates=comm.rank==0) # !
-
-gfu.Save("ex1.sol", parallel=True)
+if comm.size > 1:
+    solvers.CG(mat=a.mat, pre=c.mat, sol=gfu.vec, rhs=f.vec, maxsteps=100,
+               tol=1e-6, printrates=comm.rank==0) # !
+    gfu.Save("ex1.sol", parallel=True)
+else:    
+    gfu.Load("ex1.sol", parallel=True)
+    Draw(gfu, mesh, "sol")

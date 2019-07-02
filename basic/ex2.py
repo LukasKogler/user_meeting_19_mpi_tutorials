@@ -18,8 +18,11 @@ else:
     mesh = NGMesh.Receive(comm)
 mesh = Mesh(mesh)
 
-V = L2(mesh, order=0)
 
+# To visualize the partitioning of the mesh, we take
+# a lowest order L2 function and set it to our rank
+
+V = L2(mesh, order=0)
 gfu = GridFunction(V)
 if comm.size>1:
     gfu.Set(comm.rank)
