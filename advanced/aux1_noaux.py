@@ -5,6 +5,8 @@
 from ngsolve import *
 from netgen.csg import *
 
+comm = mpi_world
+
 geometry = CSGeometry()
 box = OrthoBrick(Pnt(-1,-1,-1),Pnt(2,1,2)).bc("outer")
 
@@ -50,6 +52,16 @@ f += SymbolicLFI(CoefficientFunction((y,0.05-x,0)) * tau, definedon=mesh.Materia
 f.Assemble()
 
 gfu = GridFunction(HC)
+
+t = comm.WTime()
 gfu.vec.data = a.mat.Inverse(HC.FreeDofs()) * f.vec
+t = comm.WTime() - t
+
+if comm.rank == 0:
+    print(' ----------- ')
+    print('ndof H-Curl space: ', HC.ndofglobal)
+    print('t solve', t)
+    print('dofs / (sec * np) ', HC.ndofglobal / (t * max(comm.size-1, 1)) )
+    print(' ----------- ')
 
 Draw (gfu.Deriv(), mesh, "B-field", draw_surf=False)

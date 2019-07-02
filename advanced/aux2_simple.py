@@ -107,5 +107,14 @@ aux_pre = pc_vec + pc_grad + jac
 
 gfu = GridFunction(HC)
 
+t = comm.WTime()
 solvers.CG(mat=bfa.mat, pre=aux_pre, sol=gfu.vec, rhs=f.vec, tol=1e-6,
            printrates=comm.rank==0)
+t = comm.WTime() - t
+
+if comm.rank == 0:
+    print(' ----------- ')
+    print('ndof H-Curl space: ', HC.ndofglobal)
+    print('t solve', t)
+    print('dofs / (sec * np) ', HC.ndofglobal / (t * max(comm.size-1, 1)) )
+    print(' ----------- ')
