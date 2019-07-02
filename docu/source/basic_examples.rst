@@ -17,7 +17,7 @@ They cover:
    a small exercise.
 
 
-4. Some more on MPI-Communicators
+4. Some more on MPI-Communicators.
 
 
 5. A time dependent problem.

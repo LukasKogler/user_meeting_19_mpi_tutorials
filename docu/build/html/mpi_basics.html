@@ -1,0 +1,896 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Basics of MPI-parallel NGSolve &mdash; MPI Tutorials NGSolve Usermeeting 2019  documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript">
+          var DOCUMENTATION_OPTIONS = {
+              URL_ROOT:'./',
+              VERSION:'',
+              LANGUAGE:'None',
+              COLLAPSE_INDEX:false,
+              FILE_SUFFIX:'.html',
+              HAS_SOURCE:  true,
+              SOURCELINK_SUFFIX: '.txt'
+          };
+      </script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Basic Examples" href="basic_examples.html" />
+    <link rel="prev" title="MPI Tutorials NGSolve Usermeeting 2019" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> MPI Tutorials NGSolve Usermeeting 2019
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Basics of MPI-parallel NGSolve</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#MPI-usage">MPI usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Distributed-Meshes">Distributed Meshes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Distributed-Finite-Element-Spaces">Distributed Finite Element Spaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Distributed-Weak-Formulations-&amp;-Linear-Algebra">Distributed Weak Formulations &amp; Linear Algebra</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Parallel-Matrices-and-Vectors">Parallel Matrices and Vectors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Matrices">Matrices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Vectors">Vectors</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="basic_examples.html">Basic Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advanced_aux.html">Advanced Examples - Auxiliary Maxwell Solver</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MPI Tutorials NGSolve Usermeeting 2019</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Basics of MPI-parallel NGSolve</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/mpi_basics.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput,
+div.nbinput div.prompt,
+div.nbinput div.input_area,
+div.nbinput div[class*=highlight],
+div.nbinput div[class*=highlight] pre,
+div.nboutput,
+div.nbinput div.prompt,
+div.nbinput div.output_area,
+div.nboutput div[class*=highlight],
+div.nboutput div[class*=highlight] pre {
+    background: none;
+    border: none;
+    padding: 0 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+/* avoid gaps between output lines */
+div.nboutput div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput,
+div.nboutput {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput,
+    div.nboutput {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput div.prompt,
+div.nboutput div.prompt {
+    min-width: 5ex;
+    padding-top: 0.4em;
+    padding-right: 0.4em;
+    text-align: right;
+    flex: 0;
+}
+@media (max-width: 540px) {
+    div.nbinput div.prompt,
+    div.nboutput div.prompt {
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput div.prompt.empty {
+        padding: 0;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput div.prompt pre,
+div.nboutput div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput div.input_area,
+div.nboutput div.output_area {
+    padding: 0.4em;
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput div.input_area,
+    div.nboutput div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    background: #f5f5f5;
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast,
+.nboutput.nblast {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast + .nbinput {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="Basics-of-MPI-parallel-NGSolve">
+<h1>Basics of MPI-parallel NGSolve<a class="headerlink" href="#Basics-of-MPI-parallel-NGSolve" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="MPI-usage">
+<h2>MPI usage<a class="headerlink" href="#MPI-usage" title="Permalink to this headline">¶</a></h2>
+<p>MPI processes are linked via so-called communicators. From Python, we have access to a handle to this opaque communicator object.</p>
+<p>It provides some basic functionality, for example it can tell us the number of processes it contains, and what out specific identifier within that set is.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+from ngsolve import *
+print(&quot;Hello from rank &quot;, mpi_world.rank, &#39; of &#39;, mpi_world.size)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:0] Hello from rank  0  of  4
+[stdout:1] Hello from rank  1  of  4
+[stdout:2] Hello from rank  2  of  4
+[stdout:3] Hello from rank  3  of  4
+</pre></div></div>
+</div>
+<p>Additionally, “mpi_world” provides:</p>
+<ul class="simple">
+<li>time measurement</li>
+<li>barriers</li>
+<li>computing sums, minima, maxima</li>
+</ul>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+comm = mpi_world
+t = comm.WTime()
+s2 = comm.Sum(1)
+t = comm.Max(comm.WTime()-t)
+if comm.rank==0:
+    print(&#39;There are &#39;, s2, &#39; of us, which took us &#39;, round(t,6), &#39;seconds to figure out&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:0] There are  4  of us, which took us  0.002464 seconds to figure out
+</pre></div></div>
+</div>
+<p>Parallel NGSolve objects do communication on C++ side in the background, so in most cases, this is all the MPI functionality we need to access directly.</p>
+<p>For situations where it is necessary to explicitely do communication on python side, there is the mpi4py package.</p>
+</div>
+<div class="section" id="Distributed-Meshes">
+<h2>Distributed Meshes<a class="headerlink" href="#Distributed-Meshes" title="Permalink to this headline">¶</a></h2>
+<p>When we load a mesh from a file in parallel, it gets distributed among the ranks and each one gets only a part of it, <strong>rank 0 gets nothing</strong>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+mesh = Mesh(&#39;square.vol&#39;, comm)
+print(&#39;rank&#39;, str(comm.rank)+&quot;&#39;s part of the mesh has &quot;, mesh.ne, &#39;elements, &#39;, \
+      mesh.nface, &#39;faces, &#39;, mesh.nedge, &#39;edges and &#39;, mesh.nv, &#39; vertices&#39;)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:0] rank 0&#39;s part of the mesh has  0 elements,  0 faces,  0 edges and  0  vertices
+[stdout:1] rank 1&#39;s part of the mesh has  77 elements,  77 faces,  128 edges and  52  vertices
+[stdout:2] rank 2&#39;s part of the mesh has  74 elements,  74 faces,  125 edges and  52  vertices
+[stdout:3] rank 3&#39;s part of the mesh has  79 elements,  79 faces,  131 edges and  53  vertices
+</pre></div></div>
+</div>
+<p><img alt="squareapart.png" src="_images/squareapart.png" /></p>
+<p>However, the entire geometry information is present everywhere:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span> --targets 0:5
+print(&#39;rank&#39;, comm.rank, &#39;Materials:&#39;, mesh.GetMaterials())
+print(&#39;rank&#39;, comm.rank, &#39;Boundaries: &#39;, mesh.GetBoundaries())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:0]
+rank 0 Materials: (&#39;default&#39;,)
+rank 0 Boundaries:  (&#39;bottom&#39;, &#39;right&#39;, &#39;top&#39;, &#39;left&#39;)
+[stdout:1]
+rank 1 Materials: (&#39;default&#39;,)
+rank 1 Boundaries:  (&#39;bottom&#39;, &#39;right&#39;, &#39;top&#39;, &#39;left&#39;)
+[stdout:2]
+rank 2 Materials: (&#39;default&#39;,)
+rank 2 Boundaries:  (&#39;bottom&#39;, &#39;right&#39;, &#39;top&#39;, &#39;left&#39;)
+[stdout:3]
+rank 3 Materials: (&#39;default&#39;,)
+rank 3 Boundaries:  (&#39;bottom&#39;, &#39;right&#39;, &#39;top&#39;, &#39;left&#39;)
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Distributed-Finite-Element-Spaces">
+<h2>Distributed Finite Element Spaces<a class="headerlink" href="#Distributed-Finite-Element-Spaces" title="Permalink to this headline">¶</a></h2>
+<p>When we define a Finite Element Space on a distributed mesh, each rank constructs a Finite Element Space on it’s part of the mesh.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+fes = H1(mesh, order=3, dirichlet=&#39;bottom|left&#39;)
+print(&#39;fes on rank&#39;, comm.rank, &#39;has&#39;, fes.ndof, &#39;DOFs, globally we have &#39;, fes.ndofglobal)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:0] fes on rank 0 has 0 DOFs, globally we have  1096
+[stdout:1] fes on rank 1 has 385 DOFs, globally we have  1096
+[stdout:2] fes on rank 2 has 376 DOFs, globally we have  1096
+[stdout:3] fes on rank 3 has 394 DOFs, globally we have  1096
+</pre></div></div>
+</div>
+<p>Taking the sum of the local number of degrees of freedofs gives us a peculiar result:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+nd2 = comm.Sum(fes.ndof)
+if comm.rank==0:
+    print(&#39;Strangely, the sum of all local DOFs is &#39;, nd2, &#39;!=&#39;, fes.ndofglobal)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:0] Strangely, the sum of all local DOFs is  1155 != 1096
+</pre></div></div>
+</div>
+<div class="line-block">
+<div class="line">Just summing up the dimensions of the local spaces does not take into account the coupling of DOFs between the subdomains:</div>
+<div class="line"><img alt="bfapart.png" src="_images/bf_apart.png" /></div>
+</div>
+<p>Information about how the local DOFs stick together on a global level are stored in the “ParallelDofs” object:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+pd = fes.ParallelDofs()
+print(&#39;rank&#39;, comm.rank, &#39;has&#39;, pd.ndoflocal, &#39;local DOFs, globally we have&#39;, pd.ndofglobal)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:0] rank 0 has 0 local DOFs, globally we have 1096
+[stdout:1] rank 1 has 385 local DOFs, globally we have 1096
+[stdout:2] rank 2 has 376 local DOFs, globally we have 1096
+[stdout:3] rank 3 has 394 local DOFs, globally we have 1096
+</pre></div></div>
+</div>
+<p>We can find out which DOFs are shared with which ranks.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span> --target=3
+print(&#39;I am rank &#39;, comm.rank)
+print(&#39;---&#39;)
+
+for k in range(min(10,fes.ndof)):
+    print(&#39;I share DOF&#39;, k, &#39;with ranks:&#39;, [p for p in pd.Dof2Proc(k)])
+
+print(&#39;... and so forth ...&#39;)
+print(&#39;\n&#39;)
+
+for p in range(0, comm.size-1):
+    if len(pd.Proc2Dof(p)):
+        print(&#39;DOFs I share with rank&#39;, p, &#39;: &#39;, [p for p in pd.Proc2Dof(p)])
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+I am rank  3
+---
+I share DOF 0 with ranks: []
+I share DOF 1 with ranks: []
+I share DOF 2 with ranks: []
+I share DOF 3 with ranks: []
+I share DOF 4 with ranks: []
+I share DOF 5 with ranks: [1]
+I share DOF 6 with ranks: [2]
+I share DOF 7 with ranks: []
+I share DOF 8 with ranks: []
+I share DOF 9 with ranks: []
+... and so forth ...
+
+
+DOFs I share with rank 1 :  [5, 15, 22, 30, 37, 39, 40, 47, 50, 83, 84, 135, 136, 173, 174, 213, 214, 251, 252, 259, 260, 267, 268, 297, 298]
+DOFs I share with rank 2 :  [6, 16, 23, 28, 29, 30, 33, 36, 87, 88, 139, 140, 179, 180, 199, 200, 201, 202, 207, 208, 229, 230]
+</pre></div></div>
+</div>
+<p>There are a couple of points to consider here:</p>
+<ul class="simple">
+<li>Locally, DOFs are numbered 0..ndoflocal-1.</li>
+<li>There is no global enumeration!</li>
+<li>The local numbering of DOFs is conistent across subdomain boundaries.</li>
+</ul>
+</div>
+<div class="section" id="Distributed-Weak-Formulations-&amp;-Linear-Algebra">
+<h2>Distributed Weak Formulations &amp; Linear Algebra<a class="headerlink" href="#Distributed-Weak-Formulations-&-Linear-Algebra" title="Permalink to this headline">¶</a></h2>
+<p>Linear- or Bilinearforms can be split into subdomain contributions.</p>
+<p>For example, the usual bilinear form <img class="math" src="_images/math/7faa3ee447a8301befee186c3696c1ef045f962a.png" alt="a(\cdot, \cdot)"/> associated to Poisson’s equation can be split into <img class="math" src="_images/math/23688c6aebca1983a75f645e975f5b0d51c05541.png" alt="a_i(\cdot, \cdot)"/> defined by:</p>
+<div class="math">
+<p><img src="_images/math/146c4aa8a6ce6ad7a34a5c99a12ab831db55f8fe.png" alt="a(u,v) = \sum_i a_i(u, v) = \sum_i \int_{\Omega_i} \nabla u \nabla v~dx = \sum_i a(u_{|\Omega_i}, v_{|\Omega_i})"/></p>
+</div><p>When we write down BLFs and LFs for distributed FESpace, we actually simply write down it’s local contributions.</p>
+<p>The FESpace figures out how to stick them together to form global forms.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+u,v = fes.TnT()
+a = BilinearForm(fes)
+a += grad(u) * grad(v) * dx
+a.Assemble()
+</pre></div>
+</div>
+</div>
+<p>Let us see what we get after assembling the bilinear form:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span> --target=1
+print(&#39;a.mat is a&#39;, type(a.mat))
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+a.mat is a &lt;class &#39;ngsolve.la.ParallelMatrix&#39;&gt;
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Parallel-Matrices-and-Vectors">
+<h2>Parallel Matrices and Vectors<a class="headerlink" href="#Parallel-Matrices-and-Vectors" title="Permalink to this headline">¶</a></h2>
+<p>The general principle for distributed linear algebra objects is:</p>
+<p><strong>Parallel Object = Local Object + ParallelDofs</strong></p>
+<div class="section" id="Matrices">
+<h3>Matrices<a class="headerlink" href="#Matrices" title="Permalink to this headline">¶</a></h3>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span> --target=1,2
+print(&#39;a.mat.local_mat on rank&#39;, comm.rank, &#39;is a&#39;, type(a.mat.local_mat), &#39;of dimensions&#39;, a.mat.local_mat.height, a.mat.local_mat.width)
+print(&#39;lcoal fes ndof: &#39;, fes.ndof)
+print(&#39;a.mat.row_pardofs: &#39;, a.mat.row_pardofs)
+print(&#39;a.mat.col_pardofs: &#39;, a.mat.col_pardofs)
+print(&#39;fes pardofs:       &#39;, fes.ParallelDofs())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+[stdout:1]
+a.mat.local_mat on rank 1 is a &lt;class &#39;ngsolve.la.SparseMatrixd&#39;&gt; of dimensions 385 385
+lcoal fes ndof:  385
+a.mat.row_pardofs:  &lt;ngsolve.la.ParallelDofs object at 0x7f3cbbfbd298&gt;
+a.mat.col_pardofs:  &lt;ngsolve.la.ParallelDofs object at 0x7f3cbbfbd298&gt;
+fes pardofs:        &lt;ngsolve.la.ParallelDofs object at 0x7f3cbbfbd298&gt;
+[stdout:2]
+a.mat.local_mat on rank 2 is a &lt;class &#39;ngsolve.la.SparseMatrixd&#39;&gt; of dimensions 376 376
+lcoal fes ndof:  376
+a.mat.row_pardofs:  &lt;ngsolve.la.ParallelDofs object at 0x7fd254130110&gt;
+a.mat.col_pardofs:  &lt;ngsolve.la.ParallelDofs object at 0x7fd254130110&gt;
+fes pardofs:        &lt;ngsolve.la.ParallelDofs object at 0x7fd254130110&gt;
+</pre></div></div>
+</div>
+<p>Each rank assembles it’s local contribution to the global bilinear form into a sparse matrix, with dimensions matching that of the <em>local</em> FESpace!</p>
+<p>Let us assume we have some global numbering, and assume that <img class="math" src="_images/math/337132f22a670288a413eaaf00c465575f42c002.png" alt="I_k"/> is the set of indices corresponding to DOFs on rank <img class="math" src="_images/math/0b7c1e16a3a8a849bb8ffdcdbf86f65fd1f30438.png" alt="k"/>.</p>
+<p>The ebmedding matrices <img class="math" src="_images/math/e7787aac056142d60113d15cc1698a771796ae1a.png" alt="E_k\in\mathbb{R}^{n_i\times n}"/> take local vectors of dimension <img class="math" src="_images/math/05a186404e8b4418ad56e3bbefdd24eed1d3b7b9.png" alt="n_k"/> and gives us global vectors of dimension <img class="math" src="_images/math/e11f2701c4a39c7fe543a6c4150b421d50f1c159.png" alt="n"/> .</p>
+<p>The global matrix <img class="math" src="_images/math/0043fe6507e9b1d112e07a2801e24927e267dd50.png" alt="A"/>, operating on vectors of dimension <img class="math" src="_images/math/e11f2701c4a39c7fe543a6c4150b421d50f1c159.png" alt="n"/>, can be assembled from the local matrices in the same way we usually assemble our FEM matrices from element matrices:</p>
+<div class="math">
+<p><img src="_images/math/58ab77fe545033f5481b16a3aec07f5cc3228d81.png" alt="A = \sum_i E_i A^{(i)} E_i^T"/></p>
+</div><p>Importantly, the local matrices are <strong>not</strong> simply diagonal blocks of the global matrix, <img class="math" src="_images/math/da6b488ba6d9a51c88de23e1a8563a745b73a09d.png" alt="A^i"/> only has partial values for DOFs that are shared with another rank, <img class="math" src="_images/math/80996e993c399069cac0e79610de9ad84a148dd2.png" alt="A^{(i)} \neq E_i^T A E_i"/>.</p>
+<p><img alt="matdistr.png" src="_images/matdistr.png" /></p>
+</div>
+<div class="section" id="Vectors">
+<h3>Vectors<a class="headerlink" href="#Vectors" title="Permalink to this headline">¶</a></h3>
+<p>Things look very similar for parallel vectors, they are again implemented as short, local vectors that make up the global one:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+f = LinearForm(fes)
+f += SymbolicLFI(x*y*v)
+f.Assemble()
+gfu = GridFunction(fes)
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span> --target 1
+print(&#39;length of vector:    &#39;, len(gfu.vec))
+print(&#39;length of local vec: &#39;, len(gfu.vec.local_vec))
+print(&#39;dim local fes:       &#39;, fes.ndof)
+print(&#39;dim global fes:      &#39;, fes.ndofglobal)
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+length of vector:     385
+length of local vec:  385
+dim local fes:        385
+dim global fes:       1096
+</pre></div></div>
+</div>
+<p>Parallel Vectors additionally have a “ParallelStatus”, which can be:</p>
+<ul>
+<li><p class="first"><strong>Cumulated</strong>, when the local vectors <img class="math" src="_images/math/5b7c79fa637d641fa7fc58ba07f12d2ba33319a3.png" alt="v^i"/> are just restrictions of the global vector <img class="math" src="_images/math/8d230554a01423c4c6560104b2918b65607c9406.png" alt="v"/>:</p>
+<div class="math">
+<p><img src="_images/math/c6c2208ca6cdf140b7e50194cf823911f861edfb.png" alt="v^{(i)} = E_i^T v"/></p>
+</div></li>
+<li><p class="first"><strong>Distributed</strong>, when, similarly to parallel matrices, the global vector is the sum of local contributions</p>
+<div class="math">
+<p><img src="_images/math/0984ce4431c29895b5dd61a0be0799f35564303a.png" alt="v = \sum_i E_iv^{(i)}"/></p>
+</div></li>
+</ul>
+<p>The vector of the linear form <img class="math" src="_images/math/875eb40014526135383caa89fd500ae40a835f56.png" alt="f"/> is a collection of locally assembled vectors, so it is distributed.</p>
+<p>The vector of the GridFunction gfu has been initialized with zeros, so it has consistent values, it is cumulated.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span> --target 1
+print(&#39;status f vec:         &#39;, f.vec.GetParallelStatus())
+print(&#39;status vec.local_vec: &#39;, f.vec.local_vec.GetParallelStatus())
+print(&#39;&#39;)
+print(&#39;status gfu vec:       &#39;, gfu.vec.GetParallelStatus())
+print(&#39;status vec.local_vec: &#39;, gfu.vec.local_vec.GetParallelStatus())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+status f vec:          PARALLEL_STATUS.DISTRIBUTED
+status vec.local_vec:  PARALLEL_STATUS.NOT_PARALLEL
+
+status gfu vec:        PARALLEL_STATUS.CUMULATED
+status vec.local_vec:  PARALLEL_STATUS.NOT_PARALLEL
+</pre></div></div>
+</div>
+<p><em>Multiplication of a sub-assembled parallel matrix with a cumulated vector gives a distributed one:</em></p>
+<div class="math">
+<p><img src="_images/math/4f0167500798440f7aeddbfe8e024046c1205b77.png" alt="w = A v = (\sum_i E_i A^{(i)} E_i^T) v = \sum_i E_i A^{(i)} E_i^Tv = \sum_i E_i A^{(i)}v^{(i)} = \sum_i E_i w^{(i)}"/></p>
+</div><div class="nbinput nblast docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span>
+v = gfu.vec.CreateVector()
+w = gfu.vec.CreateVector()
+v[:] = 1.0
+w.data = a.mat * v
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3"><div class="highlight"><pre>
+<span></span><span class="o">%%</span><span class="k">px</span> --target 1
+print(&#39;status v: &#39;, v.GetParallelStatus())
+print(&#39;status w: &#39;, w.GetParallelStatus())
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+status v:  PARALLEL_STATUS.CUMULATED
+status w:  PARALLEL_STATUS.DISTRIBUTED
+</pre></div></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="basic_examples.html" class="btn btn-neutral float-right" title="Basic Examples" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral float-left" title="MPI Tutorials NGSolve Usermeeting 2019" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Lukas Kogler
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
