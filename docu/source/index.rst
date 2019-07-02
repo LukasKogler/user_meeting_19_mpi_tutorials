@@ -8,14 +8,7 @@ MPI Tutorials NGSolve Usermeeting 2019
 
 This mini-workshop is seperated into three parts:
 
-Part one is a short introduction to MPI-parallel NGsolve in a jupyter notebook.
-
-That notebook is not meant to be run by participants, as getting it to run with MPI
-requires some additional setup. Instead a python-script containing the same code
-is provided for you.
-
-If you still want to run it yourself you need to install the "ipyparallel" package
-and start up, and connect to, an ipython cluster.
+Part one is a short introduction to MPI-parallel NGsolve.
 
 Part two consists of a series of basic python scripts for you to experiment with.
 This will hopefully get you used to NGsPy + MPI.

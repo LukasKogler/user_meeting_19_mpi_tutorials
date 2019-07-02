@@ -39,3 +39,6 @@ else:
     ## Exercise: can you find a way to do this witout a python loop?
     ## HINT: parallel vectors can be Distributed or Cumulated (.Cumulate() / .Distribute())
     ##       converts from one status to the other
+
+    ## Exercise: Can you get the Netgen gui to visualize a GridFunction with a DISTRIBUTED
+    ## coefficient vector?
