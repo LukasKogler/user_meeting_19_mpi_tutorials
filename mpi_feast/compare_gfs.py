@@ -1,6 +1,6 @@
 """
 A small script that loads the results of sequential and parallel FEAST
-using netgen.
+using NGSolve.
 """
 
 import ngsolve as ng

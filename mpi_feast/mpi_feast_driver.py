@@ -12,7 +12,7 @@ from mpi_feast_utils import feast
 
 if __name__ == '__main__':
     # Get the world communicator.
-    ng_comm = ng.MPI_Init()
+    ngs_comm = ng.mpi_world
 
     # Also get the world communitor for mpi4py.
     m4p_comm = MPI.COMM_WORLD
@@ -28,10 +28,10 @@ if __name__ == '__main__':
 
 
     eigenvalues, eigenvectors = \
-        feast(ng_comm, m4p_comm, r=r, c=c, N=N, maxh=maxh, nref=nref,
+        feast(ngs_comm, m4p_comm, r=r, c=c, N=N, maxh=maxh, nref=nref,
               order=order, niters=niters, reltol=reltol)
 
-    if ng_comm.rank == 0:
+    if ngs_comm.rank == 0:
         print('Approximate eigenvalues:', eigenvalues)
 
         exact_eigenvalues = np.array([2*np.pi**2, 5*np.pi**2, 5*np.pi**2])

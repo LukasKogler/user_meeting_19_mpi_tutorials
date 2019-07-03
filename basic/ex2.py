@@ -30,3 +30,5 @@ if comm.size>1:
 else:
     gfu.Load("ex2.sol", parallel=True)
     Draw(gfu)
+
+## Exercise: Why does this not work so well with H1?
